@@ -38,14 +38,14 @@ pip by running the following command:
 $ pip install -U django-site-multitenancy
 ```
 
-Otherwise you can download `django-site-multitenacy` and install it directly
+Otherwise you can download `django-site-multitenancy` and install it directly
 from source:
 
 ```
 $ python setup.py install
 ```
 
-Add `django-site-multitenant` to `settings.INSTALLED_APPS`:
+Add `multitenancy` to `settings.INSTALLED_APPS`:
 
 ```
 INSTALLED_APPS = [
@@ -60,8 +60,8 @@ INSTALLED_APPS = [
 ]    
 ```
  
-Add `multitenancy.middleware.SiteSelectingMiddleware` to your
-`settings.MIDDLEWARE`:
+Add `crequest.middleware.CrequestMiddleware` and
+`multitenancy.middleware.SiteSelectingMiddleware` to your `settings.MIDDLEWARE`:
 
 ```
 MIDDLEWARE = [
