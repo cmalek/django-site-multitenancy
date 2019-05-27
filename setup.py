@@ -24,7 +24,7 @@ setup(
     license='LICENSE.txt',
     description='Enable multitenancy for django projects',
     long_description=open('README.md').read(),
-    requires=[
+    install_requires=[
         'django-crequest'
     ],
     classifiers=[
