@@ -1,4 +1,6 @@
 from django.apps import AppConfig
+from django.core import checks
+from .checks import check_site_model
 
 import logging
 
@@ -18,3 +20,4 @@ class MultitenancyConfig(AppConfig):
             logger.warning(
                 "app.config.ready.error msg='f{self.__class__.__name__}.ready() executed more than once!'"
             )
+        checks.register(check_site_model, checks.Tags.models)

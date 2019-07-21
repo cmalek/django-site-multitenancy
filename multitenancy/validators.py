@@ -4,8 +4,6 @@ from django.core.validators import RegexValidator
 from django.utils.deconstruct import deconstructible
 from django.utils.encoding import force_text
 
-from .utils import get_current_site
-
 
 def get_domain_validators():
     """
@@ -47,7 +45,8 @@ class PreferredHostnameValidator:
 
     def __call__(self, value):
         text_value = force_text(value)
-        site = get_current_site()
+        Site = apps.get_model('multitenancy', 'Site')
+        site = Site.objects.get_current()
         if text_value not in [alias.domain for alias in site.alias_set.all()]:
             raise ValidationError(
                 'You must first save a Domain Name Alias, then set this field '
@@ -67,7 +66,7 @@ class AliasValidator:
 
     def __call__(self, value):
         text_value = force_text(value)
-
+        Site = apps.get_model('multitenancy', 'Site')
         for site in Site.objects.all():
             if text_value in [alias.domain for alias in site.alias_set.all()]:
                 raise ValidationError(

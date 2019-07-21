@@ -1,8 +1,6 @@
-
 from django import forms
 
-from .utils import get_current_site
-from .models import SiteSpecificModel
+from .models import SiteSpecificModel, Site
 
 
 class SiteSpecificModelForm(forms.ModelForm):
@@ -28,7 +26,7 @@ class SiteSpecificModelForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        site = get_current_site()
+        site = Site.objects.get_current()
         if site:
             for field in self.fields.values():
                 if isinstance(field, (
@@ -41,7 +39,7 @@ class SiteSpecificModelForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         if hasattr(self.instance, 'site_id') and not self.instance.site_id:
-            self.instance.site = get_current_site()
+            self.instance.site = Site.objects.get_current()
         return cleaned_data
 
     class Meta:

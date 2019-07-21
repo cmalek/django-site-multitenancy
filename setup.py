@@ -25,7 +25,7 @@ setup(
     description='Enable multitenancy for django projects',
     long_description=open('README.md').read(),
     install_requires=[
-        'django-crequest'
+        'django-crequest',
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',

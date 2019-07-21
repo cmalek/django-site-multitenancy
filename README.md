@@ -59,6 +59,20 @@ INSTALLED_APPS = [
     'multitenancy',
 ]    
 ```
+
+If you're using a custom `settings.AUTH_USER_MODEL`, add `multitenancy` to
+`INSTALLED_APPS` after the app that that model is in.
+`django-site-multitenancy` sets up some special Django admin site bits that need
+the `settings.AUTH_USER_MODEL` to be registered properly.  E.g.
+
+```
+INSTALLED_APPS = [
+    'django.contrib.auth',
+    ...
+    'custom_auth',  # Application that our settings.AUTH_USER_MODEL is in
+    'multitenancy',
+]    
+```
  
 Add `crequest.middleware.CrequestMiddleware` and
 `multitenancy.middleware.SiteSelectingMiddleware` to your `settings.MIDDLEWARE`:
