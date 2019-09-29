@@ -14,7 +14,9 @@ class MultitenancyGroup(SiteSpecificModel, Group):
     act within asite.
     """
 
+    # Need Validator here to enforce site, group__name unique_together
+    # https://stackoverflow.com/questions/3866770/error-using-a-base-class-field-in-subclass-unique-together-meta-option/3866966#3866966
+
     class Meta:
         verbose_name = _('group')
         verbose_name_plural = _('groups')
-        unique_together = ('site', 'name',)

@@ -54,9 +54,11 @@ class SiteManager(models.Manager):
 
         if ':' in host:
             domain, port = split_domain_port(host)
+        else:
+            domain = host
         if domain not in SITE_CACHE:
             SITE_CACHE[domain] = self.get(
-                Q(domain__iexact=domain) | Q(site__alias_set__domain__iexact=domain)
+                Q(domain__iexact=domain) | Q(aliases__domain__iexact=domain)
             )
         return SITE_CACHE[domain]
 

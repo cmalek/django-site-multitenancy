@@ -119,9 +119,9 @@ super_admin = SuperAdminSite(name="super_admin")
 
 
 class MultitenancyGroupAdmin(auth_admin.GroupAdmin):
-    search_fields = ('name', 'site__domain')
-    ordering = ('site__domain', 'name')
-    list_display = ('site__domain', 'site__name')
+    search_fields = ('name', 'site__domain',)
+    ordering = ('site__domain', 'name',)
+    list_display = ('site', 'name',)
     filter_horizontal = ('permissions',)
 
 
