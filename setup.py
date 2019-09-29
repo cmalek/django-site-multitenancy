@@ -19,7 +19,7 @@ setup(
     version='0.1.0',
     author='Chris Malek',
     author_email='cmalek@placodermi.org',
-    packages=['multitenancy'],
+    packages=find_packages(),
     url='https://github.com/cmalek/django-site-multitenancy',
     license='LICENSE.txt',
     description='Enable multitenancy for django projects',
