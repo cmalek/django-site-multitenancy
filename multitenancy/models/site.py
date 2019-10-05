@@ -45,7 +45,7 @@ class SiteAlias(models.Model):
         verbose_name_plural = _('site aliases')
 
 
-class Site(models.Model)A:
+class Site(models.Model):
 
     domain = models.CharField(
         _('domain name'),
