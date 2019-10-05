@@ -1,5 +1,3 @@
-from distutils.core import setup
-
 # Ref:
 #     http://docs.python.org/distutils/setupscript.html#meta-data
 #     http://pypi.python.org/pypi?%3Aaction=list_classifiers
@@ -7,12 +5,7 @@ from distutils.core import setup
 # Backward compatibility with older Python
 # patch distutils if it can't cope with the "classifiers" or
 # "download_url" keywords
-from sys import version
-if version < '2.2.3':
-    from distutils.dist import DistributionMetadata
-    DistributionMetadata.classifiers = None
-    DistributionMetadata.download_url = None
-
+from setuptools import setup, find_packages
 
 setup(
     name='django-site-multitenancy',
