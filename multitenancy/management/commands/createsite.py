@@ -72,18 +72,18 @@ class Command(BaseCommand):
                     error_msg = self._validate_domain(domain, verbose_field_name, database)
                     if error_msg:
                         self.stderr.write(error_msg)
-                        username = None
+                        domain = None
                 elif domain == '':
                     raise CommandError('%s cannot be blank.' % capfirst(verbose_field_name))
-                # Prompt for username.
+                # Prompt for domain.
                 while domain is None:
                     message = self._get_input_message(self.domain_field, default_domain)
-                    username = self.get_input_data(self.domain_field, message, default_domain)
-                    if username:
+                    domain = self.get_input_data(self.domain_field, message, default_domain)
+                    if domain:
                         error_msg = self._validate_domain(domain, verbose_field_name, database)
                         if error_msg:
                             self.stderr.write(error_msg)
-                            username = None
+                            domain = None
                             continue
                 site_data[Site.DOMAIN_FIELD] = domain
                 fake_site_data[Site.DOMAIN_FIELD] = (
@@ -106,10 +106,10 @@ class Command(BaseCommand):
 
             else:
                 # Non-interactive mode.
-                if username is None:
+                if domain is None:
                     raise CommandError('You must use --%s with --noinput.' % Site.DOMAIN_FIELD)
                 else:
-                    error_msg = self._validate_username(username, verbose_field_name, database)
+                    error_msg = self._validate_domain(domain, verbose_field_name, database)
                     if error_msg:
                         raise CommandError(error_msg)
 

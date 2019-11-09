@@ -11,51 +11,17 @@ from ..managers import (
 from ..validators import PreferredHostnameValidator, get_domain_validators
 
 
-class SiteAlias(models.Model):
-    """
-    This is a class to hold other domains by which a Site is also known.
-
-    For example, your site might have these hostnames:
-
-        foo.example.com
-        www.foo.example.com
-        m.foo.example.com
-
-    Then on your ``Site`` object, you would set the 'domain' to
-    "foo.example.com" and add SiteAliases (through the
-    ``Site.aliases`` many-to-many relationship) for "www.foo.example.com"
-    and "m.foo.example.com".
-    """
-
-    domain = models.CharField(
-        max_length=100,
-        unique=True,
-        blank=False,
-        validators=get_domain_validators(),
-        error_messages={
-            'unique': 'This domain name is already in use by another Site.'
-        }
-    )
-
-    def __str__(self):
-        return self.domain
-
-    class Meta:
-        verbose_name = _('site alias')
-        verbose_name_plural = _('site aliases')
-
-
 class Site(models.Model):
 
     domain = models.CharField(
-        _('domain name'),
+        _('Domain Name'),
         max_length=255,
         validators=get_domain_validators(),
         unique=True,
     )
 
     site_name = models.CharField(
-        verbose_name=_('site name'),
+        verbose_name=_('Site Name'),
         max_length=255,
         help_text=_("Human-readable name for the site.")
     )
@@ -73,23 +39,22 @@ class Site(models.Model):
         )
     )
 
-    aliases = models.ManyToManyField(
-        SiteAlias,
-        verbose_name=_('Site Aliases'),
-        blank=True
-    )
-
     is_root_site = models.BooleanField(
-        verbose_name=_('is root site'),
+        verbose_name=_('Is Root Site'),
         default=False,
         help_text=_(
             "If true, this site will host only the admin interface for managing other sites."
         )
     )
 
+    # Keep track of when things were last created or modified.  We always wanted to know this, and regretted on our own
+    # implementation that we didn't have it.
+    created_at = models.DateTimeField('Created At', auto_now_add=True)
+    updated_at = models.DateTimeField('Last Modified At', auto_now=True)
+
     objects = SiteManager()
 
-    DOMAIN_FIELD = ['domain']
+    DOMAIN_FIELD = 'domain'
     REQUIRED_FIELDS = ['site_name']
 
     @property
@@ -121,23 +86,65 @@ class Site(models.Model):
         # Only one site can have the is_root_site flag set
         Site = type(self)
         try:
-            default = Site.objects.get(is_root_site=True)
+            root = Site.objects.get(is_root_site=True)
         except Site.DoesNotExist:
             pass
         except Site.MultipleObjectsReturned:
             raise
         else:
-            if self.is_root_site and self.pk != default.pk:
+            if self.is_root_site and self.pk != root.pk:
                 raise ValidationError(
-                    {'is_default_site': [
+                    {'is_root_site': [
                         _(
                             "%(hostname)s is already configured as the root site."
-                            " You must unset that before you can save this site as root."
+                            " You cannot create a second root site."
                         )
-                        % {'hostname': default.hostname}
+                        % {'hostname': root.hostname}
                     ]}
                 )
 
 
 pre_save.connect(clear_site_cache, sender=Site)
 pre_delete.connect(clear_site_cache, sender=Site)
+
+
+class SiteAlias(models.Model):
+    """
+    This is a class to hold other domains by which a Site is also known.
+
+    For example, your site might have these hostnames:
+
+        foo.example.com
+        www.foo.example.com
+        m.foo.example.com
+
+    Then on your ``Site`` object, you would set the 'domain' to
+    "foo.example.com" and add SiteAliases (through the
+    ``Site.aliases`` many-to-many relationship) for "www.foo.example.com"
+    and "m.foo.example.com".
+    """
+
+    domain = models.CharField(
+        max_length=100,
+        unique=True,
+        blank=False,
+        validators=get_domain_validators(),
+        error_messages={
+            'unique': 'This domain name is already in use by another Site.'
+        }
+    )
+
+    site = models.ForeignKey(
+        Site,
+        verbose_name=_('Site'),
+        related_name='aliases',
+        on_delete=models.CASCADE
+    )
+
+    def __str__(self):
+        return self.domain
+
+    class Meta:
+        verbose_name = _('Site Alias')
+        verbose_name_plural = _('Site Aliases')
+

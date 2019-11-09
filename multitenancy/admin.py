@@ -1,6 +1,6 @@
 """
-By default, django-admin will show you all model instances.  In a multitenant
-project, you might want to "visit" a site's account, and see just the instances
+By default, django-admin will show you all model instances.  In a multitenanted
+project, you might want to "visit" a site's account and see just the instances
 that belong to them.  If you use MultitenantAdmin as your ModelAdmin class, you
 will see only the instances for the Site you are currently logged into.
 
@@ -23,7 +23,11 @@ from django.contrib.auth.models import Group
 from django.utils.html import format_html
 
 from .forms import SiteSpecificModelForm
-from .models import Site, MultitenancyGroup
+from .models import (
+    Site,
+    SiteAlias,
+    MultitenancyGroup
+)
 
 from django.core.exceptions import MultipleObjectsReturned
 from django.shortcuts import redirect
@@ -125,8 +129,39 @@ class MultitenancyGroupAdmin(auth_admin.GroupAdmin):
     filter_horizontal = ('permissions',)
 
 
+class SiteAliasInline(admin.TabularInline):
+    model = SiteAlias
+
+
+class MultitenancySiteAdmin(admin.ModelAdmin):
+    inlines = [SiteAliasInline]
+    search_fields = ('domain', 'site_name', 'title', 'aliases__domain')
+    ordering = ('domain', 'site_name',)
+    list_display = (
+        'domain',
+        'site_name',
+        'preferred_domain',
+        'created_at',
+    )
+    list_display_links = ('domain',)
+    fields = (
+        'domain',
+        'site_name',
+        'preferred_domain',
+        ('created_at', 'updated_at'),
+    )
+    readonly_fields = ('created_at', 'updated_at',)
+
+    def get_queryset(self, request):
+        """
+        This filters out the root site.  Make people edit the root site with
+        ./manage.py updaterootsite.
+        """
+        return super().get_queryset(request).exclude(is_root_site=True)
+
+
 # Ensure that this one only gets shown to install admins
-super_admin.register(Site)
+super_admin.register(Site, MultitenancySiteAdmin)
 super_admin.register(MultitenancyGroup, MultitenancyGroupAdmin)
 
 

@@ -47,7 +47,7 @@ class PreferredHostnameValidator:
         text_value = force_text(value)
         Site = apps.get_model('multitenancy', 'Site')
         site = Site.objects.get_current()
-        if text_value not in [alias.domain for alias in site.alias_set.all()]:
+        if text_value not in [alias.domain for alias in site.aliases.all()]:
             raise ValidationError(
                 'You must first save a Domain Name Alias, then set this field '
                 'to match one of those Aliases.',
@@ -68,7 +68,7 @@ class AliasValidator:
         text_value = force_text(value)
         Site = apps.get_model('multitenancy', 'Site')
         for site in Site.objects.all():
-            if text_value in [alias.domain for alias in site.alias_set.all()]:
+            if text_value in [alias.domain for alias in site.aliases.all()]:
                 raise ValidationError(
                     'This domain name is already in use by another Site.',
                     'invalid'

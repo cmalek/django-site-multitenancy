@@ -99,14 +99,14 @@ class SiteManager(models.Manager):
         if not domain:
             raise ValueError('The given domain must be set')
         site = self.model(domain=domain, site_name=site_name, **extra_fields)
-        pre_site_create.send(self.__class__, site)
+        pre_site_create.send(self.__class__, site=site)
         site.save(using=self._db)
-        post_site_create.send(self.__class__, site)
+        post_site_create.send(self.__class__, site=site)
         return site
 
     def create_site(self, domain, site_name, **extra_fields):
         extra_fields.setdefault('is_root_site', False)
-        return self._create_user(domain, site_name, **extra_fields)
+        return self._create_site(domain, site_name, **extra_fields)
 
     def create_root_site(self, domain, site_name, **extra_fields):
         extra_fields.setdefault('is_root_site', True)
