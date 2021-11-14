@@ -1,31 +1,32 @@
+from django.conf import settings
 from django.utils.http import urlencode
 from django.http.request import split_domain_port
-from django.http.response import HttpResponseBadRequest, Http404, HttpResponseRedirect
+from django.http.response import Http404, HttpResponseRedirect
 from django.utils.deprecation import MiddlewareMixin
 
 from .exceptions import MissingHostException
-from .models import Site
+from .models import Tenant
 
 
-def match_site_to_request(request):
+def match_tenant_to_request(request):
     """
-    Find the Site object responsible for responding to this HTTP request object.
+    Find the Tenant object responsible for responding to this HTTP request object.
     Try in this order:
 
-    * unique hostname
-    * unique site alias
+    * unique Site.domain
+    * unique SiteAlias.domain
 
-    If there is no matching hostname or alias for any Site, a 404 is thrown.
+    If there is no matching hostname or alias for any Tenant, a 404 is thrown.
 
-    This function returns a tuple of (<match-type>, Site), where <match-type>
+    This function returns a tuple of (<match-type>, Tenant), where <match-type>
     can be 'hostname' or 'alias'.  It also pre-selects as much as it can from
-    the Site and Settings, to avoid needless separate queries for things that
+    the Tenant and Settings, to avoid needless separate queries for things that
     will be looked at on most requests.
 
-    This function may throw either MissingHostException or Site.DoesNotExist.
+    This function may throw either MissingHostException or Tenant.DoesNotExist.
     Callers must handle those appropriately.
     """
-    query = Site.objects.prefetch_related('alias_set')
+    query = Tenant.objects.prefetch_related('aliases')
 
     if 'HTTP_HOST' not in request.META:
         # If the HTTP_HOST header is missing, this is an improperly configured a
@@ -40,42 +41,40 @@ def match_site_to_request(request):
     if ':' in hostname:
         hostname, _ = hostname.split(':')
     try:
-        # Find a Site matching this specific hostname.
-        return ['domain', query.get(domain=hostname)]
-    except Site.DoesNotExist:
-        # This except clause catches "no Site exists with this hostname", in
+        # Find a Tenant matching this specific hostname.
+        return ['domain', query.get(site__domain=hostname)]
+    except Tenant.DoesNotExist:
+        # This except clause catches "no Tenant exists with this hostname", in
         # which case we check if the hostname matches an alias.
-        # Site.DoesNotExist may be raised by get().
-        return ['alias', query.get(site__alias_set__domain=hostname)]
+        # Tenant.DoesNotExist may be raised by get().
+        return ['alias', query.get(tenant__aliases__domain=hostname)]
 
 
-class SiteSelectingMiddleware(MiddlewareMixin):
+class TenantSelectingMiddleware(MiddlewareMixin):
 
     def process_request(self, request):
-        """
-        This middleware also denies access to users who have valid accounts, but
-        aren't members of the current Site.
-        """
         try:
-            request.site = Site.objects.get_current(request)
-        except Site.DoesNotExist:
-            # This will trigger if no Site matches the request. We raise a 404
+            request.tenant = Tenant.objects.get_current(request)
+        except Tenant.DoesNotExist:
+            # This will trigger if no Tenant matches the request. We raise a 404
             # so that the user gets a useful message.
             raise Http404()
 
         # WHen a user is on the root site and tries to get to /admin/,
         # send them to the /root/ admin interface instead
 
+        # FIXME: the admin site may not start with /admin/
         if request.site.is_root_site and request.path.startswith('/admin/'):
             path = '/root/'
         else:
             path = request.path
 
         # When a user visits an admin page via an alias or a non-https URL, we
-        # need to redirect them to the https version of the Site's canonical
+        # need to redirect them to the https version of the Tenant's canonical
         # domain (so the SSL cert will work).
 
         domain, port = split_domain_port(request.get_host())
+        # FIXME: the admin site may not start with /admin/
         if request.path.startswith('/admin/') and not request.is_secure():
             url = f'https://{request.site.public_domain}{path}'
             if request.GET:

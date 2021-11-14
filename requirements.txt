@@ -1,0 +1,24 @@
+# Django and third-party apps
+# ------------------------------------------------------------------------------
+# When you update django in this file, update the links in settings.py, too!
+django==3.2.8                                 # https://www.djangoproject.com/
+django-crequest==2018.5.11                    # https://github.com/Alir3z4/django-crequest
+
+# Deployment
+# ------------------------------------------------------------------------------
+bumpversion==0.5.3                            # https://github.com/peritus/bumpversion
+Sphinx==2.0.1                                 # https://github.com/sphinx-doc/sphinx
+
+# Development
+# ------------------------------------------------------------------------------
+autopep8>=1.5.4                               # https://github.com/hhatto/autopep8
+flake8>=3.8.4                                 # https://github.com/PyCQA/flake8
+
+
+# Testing
+# ------------------------------------------------------------------------------
+unittest-xml-reporting==3.0.4                 # https://github.com/xmlrunner/unittest-xml-reporting
+coverage==5.0.3                               # https://github.com/nedbat/coveragepy
+django-coverage-plugin==1.8.0                 # https://github.com/nedbat/django_coverage_plugin
+factory-boy==2.12.0                           # https://github.com/FactoryBoy/factory_boy
+testfixtures==6.14.0                          # https://github.com/Simplistix/testfixtures

@@ -4,10 +4,10 @@ from ..managers import (
     SiteAwareQuerySet,
     SiteSpecificManager
 )
-from .site import Site
+from .tenant import Tenant
 
 
-class SiteSpecificModel(models.Model):
+class TenantSpecificModel(models.Model):
     """
     Subclass this abstract Model to turn your model into a site-specific one.
 
@@ -25,8 +25,8 @@ class SiteSpecificModel(models.Model):
     This will bring up all instances owned by the current site.
     """
 
-    site = models.ForeignKey(
-        Site,
+    tenant = models.ForeignKey(
+        Tenant,
         on_delete=models.CASCADE,
         related_name="%(app_label)s_%(class)ss",
         related_query_name="%(app_label)s_%(class)ss",
@@ -62,4 +62,3 @@ class SiteSpecificModel(models.Model):
 
     class Meta:
         abstract = True
-
