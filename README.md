@@ -75,83 +75,83 @@ INSTALLED_APPS = [
 ```
  
 Add `crequest.middleware.CrequestMiddleware` and
-`multitenancy.middleware.SiteSelectingMiddleware` to your `settings.MIDDLEWARE`:
+`multitenancy.middleware.TenantSelectingMiddleware` to your `settings.MIDDLEWARE`:
 
 ```
 MIDDLEWARE = [
     # Django middleware goes here
     ...
 
-    # Enables the use of the multitenancy.utils.get_current_site() function
+    # Enables the use of the multitenancy.utils.get_current_tenant() function
     'crequest.middleware.CrequestMiddleware',
     # Our middleware
-    'multitenancy.middleware.SiteSelectingMiddleware',
+    'multitenancy.middleware.TenantSelectingMiddleware',
 ]
 ```
 
 ## How to use
 
-### Sites
+### Tenants
 
-`multitenancy.models.Site` is a model that ... TBD.
+`multitenancy.models.Tenant is a model that ... TBD.
 
-### Request-based Site determination
+### Request-based Tenant determination
 
-The current site for each request is determined by `SiteSelectingMiddleware`, a
+The current tenant for each request is determined by `TenantSelectingMiddleware`, a
 Django middleware that compares the `HTTP_HOST` header for the request to the
-domain name and domain aliases for each site in the system, and choosing the one
-that matches, and attaching it to the current request as `request.site`.
+domain name and domain aliases for each tenant in the system, and choosing the one
+that matches, and attaching it to the current request as `request.tenant.
 
 ### Models
 
-To make a site-aware model, simply subclass django-site-multitenancy's
-`SiteSpecificModel`.  This has a `django.models.ForeignKey` on
-`multitenancy.models.Site`, and provides some special Managers.
+To make a tenant-aware model, simply subclass django-site-multitenancy's
+`TenantSpecificModel`.  This has a `django.models.ForeignKey` on
+`multitenancy.models.Tenant`, and provides some special Managers.
 
 Example:
 
 ```
 from django.db import models
-from multitenancy.models import SiteSpecificModel
+from multitenancy.models import TenantSpecificModel
 
-class Stuff(SiteSpecificModel)
+class Stuff(TenantSpecificModel)
 
     description = models.CharField(max_length=200)
 ```
 
-`SiteSpecificModel` subclasses have a Manager called `site_objects` which
-automatically filters model records to only those in the current site:
+`TenantSpecificModel` subclasses have a Manager called `tenant_objects` which
+automatically filters model records to only those in the current tenant:
 
 ```
-site_specific_things = Stuff.site_objects.all()
+tenant_specific_things = Stuff.tenant_objects.all()
 ```
 
 For those times when you want to operate on all records for a model,
-`SiteSpecificModel.objects` does not filter objects to only those in the current
-site.  It does, however, have an additional `.in_site(site)` filter, which will
-allow you to easily filter objects to only those in that site, where site is a
-`multitenancy.models.Site` object.
+`TenantSpecificModel.objects` does not filter objects to only those in the current
+tenant.  It does, however, have an additional `.in_tenant(tenant)` filter, which will
+allow you to easily filter objects to only those in that tenant, where tenant is a
+`multitenancy.models.Tenant` object.
 
 ```
-site_specific_things = Stuff.objects.in_site(site).all()
+tenant_specific_things = Stuff.objects.in_tenant(tenant).all()
 ```
 
 ### Forms
 
-For any model that subclasses `SiteSpecificModel`, you'll want to use a
-`SiteSpecificModelForm` instead of django's `ModelForm`.  The
-`SiteSpecificModelForm` has two useful features:
+For any model that subclasses `TenantSpecificModel`, you'll want to use a
+`TenantSpecificModelForm` instead of django's `ModelForm`.  The
+`TenantSpecificModelForm` has two useful features:
 
 1. All `ModelChoiceField` and `ModelMultipleChoiceField` fields on the form have
-   their querysets filtered to show only the values for the current site.  This
+   their querysets filtered to show only the values for the current tenant.  This
    happens during form class instantiation.
-1. The form's `clean()` method sets the instance's "site" field to that of the
-   site chosen by `SiteSelectingMiddleware`, if "site" was not already set.  
+1. The form's `clean()` method sets the instance's "tenant" field to that of the
+   tenant chosen by `TenantSelectingMiddleware`, if "tenant" was not already set.  
 
 Example:
 
 ```
-class StuffForm(SiteSpecificModelForm):
+class StuffForm(TenantSpecificModelForm):
 
    class Meta:
        model = Stuff
@@ -164,37 +164,37 @@ security concerns but rather to avoid complications while cleaning the form.
 
 ### Django Admin 
 
-If you use `SiteSpecificModelAdmin` as your `ModelAdmin` class for your
-`SiteSpecificModel` subclass, you will see only the instances for the site
-chosen by `SiteSelectingMiddleware` when you login to the Django admin interface
-for that site.
+If you use `TenantSpecificModelAdmin` as your `ModelAdmin` class for your
+`TenantSpecificModel` subclass, you will see only the instances for the tenant
+chosen by `TenantSelectingMiddleware` when you login to the Django admin interface
+for that tenant.
 
 Example:
 
 ```
 from django.contrib import admin
-from multitenancy.admin import SiteSpecificModelAdmin
+from multitenancy.admin import TenantSpecificModelAdmin
 from myapp.models import Stuff
 
-admin.site.register(Stuff, SiteSpecificModelAdmin)    
+admin.site.register(Stuff, TenantSpecificModelAdmin)    
 ```
 
 ### Utilities
 
-A site-aware version of Django's `get_object_or_404` shortcut:
+A tenant-aware version of Django's `get_object_or_404` shortcut:
 
 ```
-from multitenancy.utils import get_site_specific_object_or_404
+from multitenancy.utils import get_tenant_specific_object_or_404
 
-get_site_specific_object_or_404(Stuff, id=1)
+get_tenant_specific_object_or_404(Stuff, id=1)
 ```
 
-To get the `Site` instance for the current request:
+To get the `Tenant` instance for the current request:
 
 ```
-from multitenancy.middleware import get_current_site
+from multitenancy.middleware import get_current_tenant
 
-site = get_current_site()
+tenant = get_current_tenant()
 ```
 
 
@@ -202,9 +202,9 @@ site = get_current_site()
 
 ### Uniqueness constraints
 
-Add the "site" field to any uniqueness constraints for site-aware models; 
+Add the "tenant" field to any uniqueness constraints for tenant-aware models; 
 
 ```
-unique_together = (("name", "site"), ("code", "site"),)
+unique_together = (("name", "tenant"), ("code", "tenant"),)
 ```
 
