@@ -15,7 +15,7 @@ from ..validators import PreferredHostnameValidator, get_domain_validators
 
 class Tenant(models.Model):
 
-    site = models.OneToOneField(Site, related_name="tenant")
+    site = models.OneToOneField(Site, on_delete=models.CASCADE, related_name="tenant")
 
     preferred_domain = models.CharField(
         verbose_name='Preferred Domain',
