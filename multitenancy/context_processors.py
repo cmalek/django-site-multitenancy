@@ -1,7 +1,7 @@
 from .models import Tenant
 
 
-def multitenancy(request):
+def tenant(request):
     """
     Return context variables required by apps that use django-site-multitenancy.
 
