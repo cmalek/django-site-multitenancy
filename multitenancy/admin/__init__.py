@@ -8,6 +8,6 @@ from .root import (  # noqa:F401
 )
 from .tenant import (  # noqa:F401
     TenantSpecificSingleModelAdmin,
+    TenantSpecificModelAdmin,
     TenantAdmin,
-    TenantGroupAdmin
 )

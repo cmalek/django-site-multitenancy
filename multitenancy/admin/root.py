@@ -4,7 +4,7 @@
 from django.contrib import admin
 from django.contrib.auth import admin as auth_admin
 
-from .models import (
+from ..models import (
     Tenant,
     TenantGroup,
     SiteAlias
@@ -23,9 +23,14 @@ class SuperAdminSite(admin.AdminSite):
 
 class SuperTenantGroupAdmin(auth_admin.GroupAdmin):
     search_fields = ('name', 'tenant__site__domain',)
-    ordering = ('tenant__site__domain', 'name',)
-    list_display = ('tenant', 'name',)
-    filter_horizontal = ('permissions',)
+    ordering = ('tenant__site__domain', 'group__name',)
+    list_display = ('tenant', 'get_name',)
+    # FIXME: figure out how to filter tenant groups based on permissions on the associated django group
+    filter_horizontal = ()
+
+    @admin.display(ordering='group__name', description="Site Name")
+    def get_name(self, obj):
+        return obj.group.name
 
 
 class SiteAliasInline(admin.TabularInline):
@@ -34,22 +39,28 @@ class SiteAliasInline(admin.TabularInline):
 
 class SuperTenantAdmin(admin.ModelAdmin):
     inlines = [SiteAliasInline]
-    search_fields = ('domain', 'site_name', 'title', 'aliases__domain')
-    ordering = ('domain', 'site_name',)
+    search_fields = ('site__domain', 'site__name', 'aliases__domain')
+    ordering = ('site__domain', 'site__name',)
     list_display = (
-        'domain',
-        'site_name',
+        'get_domain',
+        'get_name',
         'preferred_domain',
         'created_at',
     )
-    list_display_links = ('domain',)
     fields = (
-        'domain',
-        'site_name',
+        'site',
         'preferred_domain',
         ('created_at', 'updated_at'),
     )
     readonly_fields = ('created_at', 'updated_at',)
+
+    @admin.display(ordering='site__domain', description="Domain")
+    def get_domain(self, obj):
+        return obj.site.domain
+
+    @admin.display(ordering='site__name', description="Site Name")
+    def get_name(self, obj):
+        return obj.site.name
 
     def get_queryset(self, request):
         """

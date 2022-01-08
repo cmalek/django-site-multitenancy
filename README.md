@@ -60,10 +60,9 @@ INSTALLED_APPS = [
 ]    
 ```
 
-If you're using a custom `settings.AUTH_USER_MODEL`, add `multitenancy` to
-`INSTALLED_APPS` after the app that that model is in.
-`django-site-multitenancy` sets up some special Django admin site bits that need
-the `settings.AUTH_USER_MODEL` to be registered properly.  E.g.
+If you're using a custom `settings.AUTH_USER_MODEL`, add `multitenancy` to `INSTALLED_APPS` after the app that that
+model is in.  `django-site-multitenancy` sets up some special Django admin site bits that need the
+`settings.AUTH_USER_MODEL` to be registered properly.  E.g.
 
 ```
 INSTALLED_APPS = [

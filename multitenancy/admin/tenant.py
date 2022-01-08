@@ -5,8 +5,8 @@ from django.contrib import admin, messages
 from django.contrib.auth.models import Group
 from django.utils.html import format_html
 
-from .forms import TenantSpecificModelForm
-from .models import (
+from ..forms import TenantSpecificModelForm
+from ..models import (
     Tenant,
     TenantGroup,
 )
@@ -112,7 +112,15 @@ class TenantAdmin(admin.ModelAdmin):
     """
     This allows a Tenant owner to manage the configs for their site.
     """
-    list_display = ('site__domain', 'site__name', 'preferred_domain', 'alias_domains')
+    list_display = ('get_domain', 'get_name', 'preferred_domain',)
+
+    @admin.display(ordering='site__domain', description="Domain")
+    def get_domain(self, obj):
+        return obj.site.domain
+
+    @admin.display(ordering='site__name', description="Site Name")
+    def get_name(self, obj):
+        return obj.site.name
 
     def alias_domains(self, obj):
         return format_html("<br />".join([alias.domain for alias in obj.aliases.all()]))

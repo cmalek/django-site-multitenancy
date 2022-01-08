@@ -18,7 +18,7 @@ class NotRunningInTTYException(Exception):
 
 
 class Command(BaseCommand):
-    help = 'Used to create a the multitenancy root site.'
+    help = 'Used to create a multitenancy Tenant.'
     requires_migrations_checks = True
     stealth_options = ('stdin',)
 
@@ -42,8 +42,8 @@ class Command(BaseCommand):
         parser.add_argument(
             '--database',
             default=DEFAULT_DB_ALIAS,
-            help='Specifies the database to use. Default is "default".',
-            )
+            help='Specifies the database to use. Default is "default".'
+        )
 
     def execute(self, *args, **options):
         self.stdin = options.get('stdin', sys.stdin)  # Used for testing
@@ -103,7 +103,7 @@ class Command(BaseCommand):
             else:
                 Tenant._default_manager.db_manager(database).create_site(**site_data)
             if options['verbosity'] >= 1:
-                self.stdout.write("Site created successfully.")
+                self.stdout.write("Tenant created successfully.")
         except KeyboardInterrupt:
             self.stderr.write('\nOperation cancelled.')
             sys.exit(1)
@@ -111,7 +111,7 @@ class Command(BaseCommand):
             raise CommandError('; '.join(e.messages))
         except NotRunningInTTYException:
             self.stdout.write(
-                'Site creation skipped due to not running in a TTY. '
+                'Tenant creation skipped due to not running in a TTY. '
                 f'You can run `manage.py {command_name}` in your project '
                 'to create one manually.'
             )

@@ -1,5 +1,4 @@
 from django.db import models
-from django.contrib.auth import get_user_model
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.models import Group, PermissionsMixin, UserManager
 from django.contrib.auth.validators import UnicodeUsernameValidator
@@ -12,20 +11,16 @@ from .mixins import TenantSpecificModel
 from .tenant import Tenant
 
 
-User = get_user_model()
-
-
 class TenantGroup(TenantSpecificModel):
     """
-    This class  of django.contrib.auth.models.Group allows us to add a
-    ForeignKey on our Tenant object and to have users that are in the Django
-    Group only for specific tenants.
+    This class has a OneToOne relation on django.contrib.auth.models.Group.  It
+    gives us a ForeignKey on our Tenant object, allowing us to have users that
+    are in the Django Group only for specific tenants.
     """
 
     objects = TenantGroupManager()
 
-    group = models.OneToOneField(Group, related_name="tenant_group")
-    users = models.ManyToManyField(User, related_name='tenant_groups')
+    group = models.OneToOneField(Group, on_delete=models.CASCADE, related_name="tenant_group")
 
     def __str__(self):
         return f'{self.name}:{self.tenant.public_domain}'
@@ -38,6 +33,22 @@ class TenantGroup(TenantSpecificModel):
         verbose_name_plural = _('tenant groups')
 
 
+class UserTenantProfile(models.Model):
+
+    tenant_groups = models.ManyToManyField(
+        TenantGroup,
+        related_name='user_tenant_profiles'
+    )
+    tenants = models.ManyToManyField(
+        Tenant,
+        through='multitenancy.TenantMembership'
+    )
+
+    class Meta:
+        verbose_name = _('user tenant profile')
+        verbose_name_plural = _('user tenant profiles')
+
+
 class TenantMembership(models.Model):
 
     tenant = models.ForeignKey(
@@ -46,7 +57,7 @@ class TenantMembership(models.Model):
         related_name='tenant_membership'
     )
     user = models.ForeignKey(
-        User,
+        UserTenantProfile,
         on_delete=models.CASCADE,
         related_name="tenant_membership"
     )
@@ -55,20 +66,19 @@ class TenantMembership(models.Model):
 
     class Meta:
         verbose_name = _('tenant membership')
-        verbose_name_pural = _('tenant memberships')
+        verbose_name_plural = _('tenant memberships')
         unique_together = ('tenant', 'user',)
 
 
 class AbstractTenantUser(AbstractBaseUser, PermissionsMixin):
     """
-    Our own AbstractUser model.  We need this primarily to properly handle the
-    `is_active` and `is_staff` fields, which are used often by auth backends and
-    by the Django admin.
+    Our own AbstractUser model.  We need this primarily to properly handle the `is_active` and `is_staff` fields, which
+    are used often by auth backends and by the Django admin.
     """
 
     username_validator = UnicodeUsernameValidator()
+    tenant_profile = models.OneToOneField(UserTenantProfile, on_delete=models.CASCADE, related_name="user")
 
-    tenants = models.ManyToManyField(Tenant, through=TenantMembership)
     username = models.CharField(
         _('username'),
         max_length=150,
@@ -107,10 +117,12 @@ class AbstractTenantUser(AbstractBaseUser, PermissionsMixin):
     @is_active.setter
     def is_active(self, value):
         """
-        We're just setting `self._is_active` here.  To manage a user
-        for a particular `Tenant`, use `User.activate()` and `User.deactivate()`.
+        We're just setting `self._is_active` here.  To manage a user for a particular `Tenant`, use `User.activate()`
+        and `User.deactivate()`.
         """
         self._is_active = value
+
+    # is_staff
 
     @property
     def is_staff(self):
@@ -119,8 +131,8 @@ class AbstractTenantUser(AbstractBaseUser, PermissionsMixin):
     @is_staff.setter
     def is_staff(self, value):
         """
-        We're just setting `self._is_staff` here.  To manage a user for a
-        particular `Tenant`, use `User.make_staff()` and `User.remove_staff()`.
+        We're just setting `self._is_staff` here.  To manage a user for a particular `Tenant`, use `User.make_staff()`
+        and `User.remove_staff()`.
         """
         self._is_staff = value
 
@@ -130,10 +142,11 @@ class AbstractTenantUser(AbstractBaseUser, PermissionsMixin):
         try:
             self.tenants.get(tenant=tenant)
         except TenantMembership.DoesNotExist:
-            membership = TenantMembership(tenant=tenant, user=self)
+            membership = TenantMembership(
+                tenant=tenant,
+                user=self.tenant_profile
+            )
             membership.save()
-
-    # is_staff
 
     @property
     def is_super_admin(self):
@@ -152,7 +165,10 @@ class AbstractTenantUser(AbstractBaseUser, PermissionsMixin):
         if not tenant:
             tenant = Tenant.objects.get_current()
         try:
-            TenantMembership.objects.get(tenant=tenant, user=self)
+            TenantMembership.objects.get(
+                tenant=tenant,
+                user=self.tenant_profile
+            )
         except TenantMembership.DoesNotExist:
             return False
         return True
@@ -162,7 +178,10 @@ class AbstractTenantUser(AbstractBaseUser, PermissionsMixin):
             return True
         if not tenant:
             tenant = Tenant.objects.get_current()
-        membership = TenantMembership.objects.get(tenant=tenant, user=self)
+        membership = TenantMembership.objects.get(
+            tenant=tenant,
+            user=self.tenant_profile
+        )
         return membership.is_staff
 
     def make_staff(self, tenant=None):
@@ -171,7 +190,10 @@ class AbstractTenantUser(AbstractBaseUser, PermissionsMixin):
         """
         if not tenant:
             tenant = Tenant.objects.get_current()
-        membership = TenantMembership.objects.get(tenant=tenant, user=self)
+        membership = TenantMembership.objects.get(
+            tenant=tenant,
+            user=self.tenant_profile
+        )
         membership.is_staff = True
         membership.save()
 
@@ -181,7 +203,10 @@ class AbstractTenantUser(AbstractBaseUser, PermissionsMixin):
         """
         if not tenant:
             tenant = Tenant.objects.get_current()
-        membership = TenantMembership.objects.get(tenant=tenant, user=self)
+        membership = TenantMembership.objects.get(
+            tenant=tenant,
+            user=self.tenant_profile
+        )
         membership.is_staff = False
         membership.save()
 
@@ -192,7 +217,10 @@ class AbstractTenantUser(AbstractBaseUser, PermissionsMixin):
             return True
         if not tenant:
             tenant = Tenant.objects.get_current()
-        membership = TenantMembership.objects.get(tenant=tenant, user=self)
+        membership = TenantMembership.objects.get(
+            tenant=tenant,
+            user=self.tenant_profile
+        )
         return membership.is_active
 
     def activate(self, tenant=None):
@@ -201,7 +229,10 @@ class AbstractTenantUser(AbstractBaseUser, PermissionsMixin):
         """
         if not tenant:
             tenant = Tenant.objects.get_current()
-        membership = TenantMembership.objects.get(tenant=tenant, user=self)
+        membership = TenantMembership.objects.get(
+            tenant=tenant,
+            user=self.tenant_profile
+        )
         membership.is_active = True
         membership.save()
 

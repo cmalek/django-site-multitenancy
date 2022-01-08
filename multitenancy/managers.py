@@ -1,10 +1,11 @@
 from crequest.middleware import CrequestMiddleware
 from django.apps import apps
 from django.contrib.sites.models import Site
+from django.core import checks
+from django.core.exceptions import FieldDoesNotExist
 from django.db import models
 from django.db.models import Q
 from django.contrib.auth.models import Group
-from django.contrib.sites.managers import CurrentSiteManager
 from django.http.request import split_domain_port
 from django.http.response import HttpResponseBadRequest
 
@@ -18,7 +19,56 @@ from .signals import (
 TENANT_CACHE = {}
 
 
-class TenantSpecificManager(CurrentSiteManager):
+class TenantSpecificManager(models.Manager):
+
+    use_in_migrations = True
+
+    def __init__(self, field_name=None):
+        super().__init__()
+        self.__field_name = field_name
+
+    def check(self, **kwargs):
+        errors = super().check(**kwargs)
+        errors.extend(self._check_field_name())
+        return errors
+
+    def _check_field_name(self):
+        field_name = self._get_field_name()
+        try:
+            field = self.model._meta.get_field(field_name)
+        except FieldDoesNotExist:
+            return [
+                checks.Error(
+                    f"TenantSpecificManager could not find a field named '{field_name}'.",
+                    obj=self,
+                    id='multitenancy.E001',
+                )
+            ]
+
+        if not field.many_to_many and not isinstance(field, (models.ForeignKey)):
+            return [
+                checks.Error(
+                    "TenantSpecificManager cannot use '%s.%s' as it is not a foreign key or a many-to-many field." % (
+                        self.model._meta.object_name, field_name
+                    ),
+                    obj=self,
+                    id='multitenancy.E002',
+                )
+            ]
+
+        return []
+
+    def _get_field_name(self):
+        """ Return self.__field_name or 'tenant' or 'tenants'. """
+
+        if not self.__field_name:
+            try:
+                self.model._meta.get_field('tenant')
+            except FieldDoesNotExist:
+                self.__field_name = 'tenants'
+            else:
+                self.__field_name = 'tenant'
+        return self.__field_name
 
     def get_queryset(self):
         Tenant = apps.get_model('multitenancy', 'Tenant')
